@@ -42,14 +42,17 @@ export const PieChart: React.FC<PieChartProps> = ({
   animationStyle = "expand",
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, width, height } = useVideoConfig();
+  const vertical = height > width;
+  const canvasW = vertical ? 1080 : 1920;
+  const canvasH = vertical ? 1920 : 1080;
 
   const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
 
   // Layout
-  const cx = showLegend ? 760 : 960;
-  const cy = title ? 540 : 500;
-  const outerRadius = 300;
+  const cx = vertical ? 540 : showLegend ? 760 : 960;
+  const cy = vertical ? 760 : title ? 540 : 500;
+  const outerRadius = vertical ? (data.length > 3 ? 300 : 360) : 300;
   const innerRadius = donut ? outerRadius * 0.55 : 0;
 
   // Build slice angles
@@ -98,19 +101,19 @@ export const PieChart: React.FC<PieChartProps> = ({
       }}
     >
       <svg
-        viewBox="0 0 1920 1080"
+        viewBox={`0 0 ${canvasW} ${canvasH}`}
         style={{ width: "100%", height: "100%" }}
       >
         {/* Title */}
         {title && (
           <text
-            x={960}
-            y={80}
+            x={canvasW / 2}
+            y={vertical ? 140 : 80}
             textAnchor="middle"
             fill={textColor}
             fontFamily={fontFamily}
             fontWeight={700}
-            fontSize={48}
+            fontSize={vertical ? 56 : 48}
             opacity={spring({ frame, fps, config: { damping: 20 } })}
           >
             {title}
@@ -251,8 +254,15 @@ export const PieChart: React.FC<PieChartProps> = ({
         {showLegend && (
           <g opacity={fadeOut}>
             {slices.map((slice, i) => {
-              const legendY = cy - (slices.length * 44) / 2 + i * 44;
-              const legendX = showLegend ? 1200 : cx + outerRadius + 80;
+              const verticalRowH = data.length > 3 ? 80 : 110;
+              const legendY = vertical
+                ? cy + outerRadius + 100 + i * verticalRowH
+                : cy - (slices.length * 44) / 2 + i * 44;
+              const legendX = vertical
+                ? 130
+                : showLegend
+                ? 1200
+                : cx + outerRadius + 80;
               const legendOpacity = spring({
                 frame: frame - 15 - i * 3,
                 fps,
@@ -262,32 +272,32 @@ export const PieChart: React.FC<PieChartProps> = ({
                 <g key={`legend-${i}`} opacity={legendOpacity}>
                   <rect
                     x={legendX}
-                    y={legendY - 8}
-                    width={20}
-                    height={20}
+                    y={legendY - (vertical ? 12 : 8)}
+                    width={vertical ? 28 : 20}
+                    height={vertical ? 28 : 20}
                     rx={4}
                     fill={slice.color}
                   />
                   <text
                     x={legendX + 32}
-                    y={legendY + 6}
+                    y={legendY + (vertical ? 10 : 6)}
                     fill={textColor}
                     fontFamily={fontFamily}
-                    fontSize={22}
+                    fontSize={vertical ? (data.length > 3 ? 30 : 34) : 22}
                     fontWeight={500}
                   >
                     {slice.datum.label}
                   </text>
                   <text
                     x={legendX + 32}
-                    y={legendY + 6}
+                    y={legendY + (vertical ? 10 : 6)}
                     fill={textColor}
                     fontFamily={fontFamily}
-                    fontSize={22}
+                    fontSize={vertical ? (data.length > 3 ? 30 : 34) : 22}
                     fontWeight={400}
                     opacity={0.6}
                     textAnchor="end"
-                    dx={280}
+                    dx={vertical ? 720 : 280}
                   >
                     {slice.percentage.toFixed(1)}%
                   </text>

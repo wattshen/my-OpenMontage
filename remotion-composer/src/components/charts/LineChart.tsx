@@ -53,13 +53,22 @@ export const LineChart: React.FC<LineChartProps> = ({
   strokeWidth = 3,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, width, height } = useVideoConfig();
+  const vertical = height > width;
+  const canvasW = vertical ? 1080 : 1920;
+  const canvasH = vertical ? 1920 : 1080;
 
   // Chart layout
-  const chartLeft = 160;
-  const chartRight = 1760;
-  const chartTop = title ? 160 : 100;
-  const chartBottom = showLegend ? 880 : 940;
+  const chartLeft = vertical ? 130 : 160;
+  const chartRight = vertical ? 990 : 1760;
+  const chartTop = vertical ? (title ? 330 : 240) : title ? 160 : 100;
+  const chartBottom = vertical
+    ? showLegend
+      ? 1480
+      : 1520
+    : showLegend
+    ? 880
+    : 940;
   const chartWidth = chartRight - chartLeft;
   const chartHeight = chartBottom - chartTop;
 
@@ -108,19 +117,19 @@ export const LineChart: React.FC<LineChartProps> = ({
       }}
     >
       <svg
-        viewBox="0 0 1920 1080"
+        viewBox={`0 0 ${canvasW} ${canvasH}`}
         style={{ width: "100%", height: "100%" }}
       >
         {/* Title */}
         {title && (
           <text
-            x={960}
-            y={80}
+            x={canvasW / 2}
+            y={vertical ? 150 : 80}
             textAnchor="middle"
             fill={textColor}
             fontFamily={fontFamily}
             fontWeight={700}
-            fontSize={48}
+            fontSize={vertical ? 52 : 48}
             opacity={spring({ frame, fps, config: { damping: 20 } })}
           >
             {title}
@@ -151,7 +160,7 @@ export const LineChart: React.FC<LineChartProps> = ({
                   textAnchor="end"
                   fill={textColor}
                   fontFamily={fontFamily}
-                  fontSize={18}
+                  fontSize={vertical ? 22 : 18}
                   fontWeight={400}
                 >
                   {formatNumber(line.value)}
@@ -171,11 +180,11 @@ export const LineChart: React.FC<LineChartProps> = ({
                 />
                 <text
                   x={line.x}
-                  y={chartBottom + 36}
+                  y={chartBottom + (vertical ? 48 : 36)}
                   textAnchor="middle"
                   fill={textColor}
                   fontFamily={fontFamily}
-                  fontSize={18}
+                  fontSize={vertical ? 22 : 18}
                   fontWeight={400}
                 >
                   {formatNumber(line.value)}
@@ -213,11 +222,11 @@ export const LineChart: React.FC<LineChartProps> = ({
         {xLabel && (
           <text
             x={chartLeft + chartWidth / 2}
-            y={chartBottom + 70}
+            y={chartBottom + (vertical ? 90 : 70)}
             textAnchor="middle"
             fill={textColor}
             fontFamily={fontFamily}
-            fontSize={22}
+            fontSize={vertical ? 26 : 22}
             fontWeight={500}
             opacity={interpolate(frame, [5, 15], [0, 1], {
               extrapolateLeft: "clamp",
@@ -234,7 +243,7 @@ export const LineChart: React.FC<LineChartProps> = ({
             textAnchor="middle"
             fill={textColor}
             fontFamily={fontFamily}
-            fontSize={22}
+            fontSize={vertical ? 26 : 22}
             fontWeight={500}
             transform={`rotate(-90, 40, ${chartTop + chartHeight / 2})`}
             opacity={interpolate(frame, [5, 15], [0, 1], {
@@ -348,12 +357,15 @@ export const LineChart: React.FC<LineChartProps> = ({
           >
             {series.map((s, i) => {
               const color = s.color || colors[i % colors.length];
-              const legendX = 960 - (series.length * 160) / 2 + i * 160;
+              const itemWidth = vertical ? 200 : 160;
+              const legendX =
+                canvasW / 2 - (series.length * itemWidth) / 2 + i * itemWidth;
+              const legendY = vertical ? 1600 : 960;
               return (
                 <g key={`legend-${i}`}>
                   <rect
                     x={legendX}
-                    y={960}
+                    y={legendY}
                     width={24}
                     height={4}
                     rx={2}
@@ -361,10 +373,10 @@ export const LineChart: React.FC<LineChartProps> = ({
                   />
                   <text
                     x={legendX + 32}
-                    y={966}
+                    y={legendY + 6}
                     fill={textColor}
                     fontFamily={fontFamily}
-                    fontSize={20}
+                    fontSize={vertical ? 26 : 20}
                     fontWeight={500}
                   >
                     {s.label}

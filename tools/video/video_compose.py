@@ -1497,6 +1497,60 @@ class VideoCompose(BaseTool):
                 "Re-run the proposal stage with a renderer_family selection."
             )
 
+        # --- 4. Empty-cut guard + density audit (explainer families only) ---
+        # An explainer cut with neither a `type` nor a `source` renders as the
+        # SceneRenderer fallback (a bare text card showing the cut id), which is
+        # exactly the "empty video" failure. Block it before render.
+        is_explainer = (renderer_family or "").startswith("explainer")
+        if edit_decisions.get("render_runtime") == "ffmpeg":
+            missing_source = [
+                str(c.get("id", f"index-{i}"))
+                for i, c in enumerate(resolved_cuts)
+                if not c.get("source")
+            ]
+            if missing_source:
+                blocks.append(
+                    "FFmpeg render requires a `source` on every cut; missing on: "
+                    f"{', '.join(missing_source)}. Use render_runtime='remotion' "
+                    "for component-only scenes."
+                )
+
+        if is_explainer and resolved_cuts:
+            empty = [
+                str(c.get("id", f"index-{i}"))
+                for i, c in enumerate(resolved_cuts)
+                if not c.get("type") and not c.get("source")
+            ]
+            if empty:
+                blocks.append(
+                    "Cuts have neither `type` nor `source` and would render as "
+                    f"blank fallbacks: {', '.join(empty)}. "
+                    "Every explainer cut MUST carry the rendering fields from "
+                    "scene_plan (type/text/stat/chartData/...)."
+                )
+
+            data_viz = {"bar_chart", "line_chart", "pie_chart", "kpi_grid", "comparison", "diagram"}
+            viz_count = sum(1 for c in resolved_cuts if c.get("type") in data_viz)
+            total = max(
+                (float(c.get("out_seconds", 0)) for c in resolved_cuts), default=0.0
+            )
+            if total >= 30 and viz_count < 2:
+                warnings.append(
+                    f"Only {viz_count} data-visualization cut(s) in a {total:.0f}s "
+                    "explainer — target is 2+. Expect a sparse, text-heavy video."
+                )
+
+            overlays = edit_decisions.get("overlays") or []
+            covered = sum(
+                max(0.0, float(o.get("out_seconds", 0)) - float(o.get("in_seconds", 0)))
+                for o in overlays
+            )
+            if total > 0 and covered / total < 0.30:
+                warnings.append(
+                    f"Overlay coverage is {covered / total:.0%} of the timeline "
+                    "(target ≥30%). Text cards alone read as empty."
+                )
+
         # Log warnings
         for w in warnings:
             log.warning("[pre-compose] %s", w)

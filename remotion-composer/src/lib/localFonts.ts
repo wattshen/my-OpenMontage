@@ -3,6 +3,8 @@ import { cancelRender, continueRender, delayRender } from "remotion";
 import playfairItalicUrl from "../fonts/PlayfairDisplay-Italic-latin.woff2";
 import playfairUrl from "../fonts/PlayfairDisplay-latin.woff2";
 import spaceGroteskUrl from "../fonts/SpaceGrotesk-latin.woff2";
+import longCangUrl from "../fonts/LongCang-Regular.ttf";
+import architectsDaughterUrl from "../fonts/ArchitectsDaughter-Regular.ttf";
 
 /**
  * Fonts bundled with the compositions instead of fetched from Google Fonts at
@@ -25,9 +27,20 @@ import spaceGroteskUrl from "../fonts/SpaceGrotesk-latin.woff2";
 const LATIN =
   "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD";
 
+// CJK blocks for the Long Cang handwriting font: CJK Unified Ideographs,
+// CJK Symbols and Punctuation (、。「」…), and Halfwidth/Fullwidth Forms (？！，ＣＯＤＥ).
+const CJK = "U+4E00-9FFF, U+3000-303F, U+FF00-FFEF";
+
 const loaded = new Set<string>();
 
-const register = (family: string, url: string, style: "normal" | "italic", weights: string[]) => {
+const register = (
+  family: string,
+  url: string,
+  style: "normal" | "italic",
+  weights: string[],
+  unicodeRange: string = LATIN,
+  format: "woff2" | "truetype" = "woff2",
+) => {
   if (typeof FontFace === "undefined") return family;
   for (const weight of weights) {
     const key = `${family}-${style}-${weight}`;
@@ -35,7 +48,7 @@ const register = (family: string, url: string, style: "normal" | "italic", weigh
     loaded.add(key);
     queueMicrotask(() => {
       const handle = delayRender(`Loading bundled font ${key}`);
-      const face = new FontFace(family, `url(${url}) format('woff2')`, { weight, style, unicodeRange: LATIN });
+      const face = new FontFace(family, `url(${url}) format('${format}')`, { weight, style, unicodeRange });
       face
         .load()
         .then(() => {
@@ -53,3 +66,15 @@ export const loadSpaceGrotesk = (weights: string[]) => ({ fontFamily: register("
 export const loadPlayfair = (style: "normal" | "italic", weights: string[]) => ({
   fontFamily: register("Playfair Display", style === "italic" ? playfairItalicUrl : playfairUrl, style, weights),
 });
+
+/**
+ * Whiteboard-explainer handwriting pair (OpenTake style port): Long Cang covers
+ * CJK + fullwidth punctuation, Architects Daughter covers latin. Both are single
+ * weight (400) SIL OFL fonts bundled as ttf. Registered lazily — call only from
+ * compositions that opt into the handwriting theme, so other renders are untouched.
+ */
+export const loadHandwriting = () => {
+  register("Long Cang", longCangUrl, "normal", ["400"], `${LATIN}, ${CJK}`, "truetype");
+  register("Architects Daughter", architectsDaughterUrl, "normal", ["400"], LATIN, "truetype");
+  return { headingFont: '"Long Cang", "Architects Daughter", cursive' };
+};

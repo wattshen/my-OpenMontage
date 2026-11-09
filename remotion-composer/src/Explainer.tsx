@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadSpaceGrotesk } from "./lib/localFonts";
+import { loadSpaceGrotesk, loadHandwriting } from "./lib/localFonts";
 import { TextCard } from "./components/TextCard";
 import { StatCard } from "./components/StatCard";
 import { CalloutBox } from "./components/CalloutBox";
@@ -177,6 +177,258 @@ const AnimatedBackground: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
         }}
       />
     </AbsoluteFill>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Whiteboard Background — dry-erase board texture (opt-in via theme.boardTexture)
+// ---------------------------------------------------------------------------
+// Warm-white board, a few faint ghost scribbles from erased marks, and a slow
+// window-light sheen drifting across the surface. Only used when a theme sets
+// boardTexture: true; every existing render keeps AnimatedBackground untouched.
+
+const WhiteboardBackground: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // Sheen drifts at ~0.35x the pace of the usual orb motion.
+  const sheenX = 30 + Math.sin(frame / (fps * 28)) * 25;
+  const sheenY = 35 + Math.cos(frame / (fps * 34)) * 18;
+
+  // Static ghost marks (deterministic scribbles, 5-8% grey) — erased-marker residue.
+  const ghosts = [
+    "M 120 300 q 90 -70 180 0 t 180 0",
+    "M 760 180 q 120 60 240 10 l 60 -40",
+    "M 200 1400 c 80 -60 160 60 240 0 s 120 -40 200 20",
+    "M 820 1500 q 100 -80 200 -20 t 120 60",
+    "M 60 900 l 200 -30 q 60 40 140 10",
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: theme.backgroundColor }}>
+      {/* Very subtle vertical warmth so it isn't a flat PNG of white */}
+      <AbsoluteFill
+        style={{
+          background: `linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(0,0,0,0) 45%, rgba(90,80,50,0.05) 100%)`,
+        }}
+      />
+      {/* Ghost scribbles */}
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 1080 1920"
+        preserveAspectRatio="xMidYMid slice"
+        style={{ position: "absolute", inset: 0 }}
+      >
+        {ghosts.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke="#23262C"
+            strokeWidth={i % 2 ? 10 : 7}
+            strokeLinecap="round"
+            opacity={0.045 + (i % 3) * 0.012}
+            filter="url(#boardBlur)"
+          />
+        ))}
+        <defs>
+          <filter id="boardBlur">
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
+        </defs>
+      </svg>
+      {/* Window-light sheen */}
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(ellipse 60% 40% at ${sheenX}% ${sheenY}%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 70%)`,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Whiteboard Decor — hand-drawn SVG doodles layered over text scenes
+// (opt-in via theme.boardDecor; deterministic per cut.id hash)
+// ---------------------------------------------------------------------------
+
+/** Simple deterministic hash from string → uint32 */
+const hashStr = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+};
+
+/** Seeded pseudo-random in [0,1) */
+const seededRand = (seed: number, idx: number): number => {
+  const x = Math.sin(seed * 9301 + idx * 49297 + 233280) * 0.5 + 0.5;
+  return x - Math.floor(x);
+};
+
+const WhiteboardDecor: React.FC<{
+  cutId: string;
+  cutType?: string;
+  accentColor: string;
+  textColor: string;
+  width: number;
+  height: number;
+}> = ({ cutId, cutType, accentColor, textColor, width, height }) => {
+  const seed = hashStr(cutId);
+  const ink = textColor;
+  const accent = accentColor;
+
+  // Only decorate text-centric scenes
+  const decoratable = ["text_card", "comparison", "hero_title", "callout"];
+  if (!cutType || !decoratable.includes(cutType)) return null;
+
+  const elements: React.ReactNode[] = [];
+
+  if (cutType === "text_card" || cutType === "hero_title") {
+    // Hand-drawn underline below text area (~72% down from top)
+    const y = height * 0.72 + seededRand(seed, 0) * 20 - 10;
+    const x1 = width * 0.2 + seededRand(seed, 1) * 30;
+    const x2 = width * 0.8 - seededRand(seed, 2) * 30;
+    const midX = (x1 + x2) / 2 + (seededRand(seed, 3) - 0.5) * 40;
+    const midY = y + 8 + seededRand(seed, 4) * 6;
+    elements.push(
+      <path
+        key="underline"
+        d={`M ${x1} ${y} Q ${midX} ${midY} ${x2} ${y}`}
+        fill="none"
+        stroke={accent}
+        strokeWidth={4 + seededRand(seed, 5) * 2}
+        strokeLinecap="round"
+        opacity={0.85}
+      />
+    );
+    // Ink dot at start
+    elements.push(
+      <circle
+        key="dot"
+        cx={x1}
+        cy={y}
+        r={3 + seededRand(seed, 6) * 2}
+        fill={accent}
+        opacity={0.9}
+      />
+    );
+  }
+
+  if (cutType === "text_card") {
+    // Small circle around a random spot (upper right area)
+    const cx = width * (0.65 + seededRand(seed, 7) * 0.2);
+    const cy = height * (0.18 + seededRand(seed, 8) * 0.1);
+    const rx = 30 + seededRand(seed, 9) * 20;
+    const ry = 20 + seededRand(seed, 10) * 15;
+    const rot = -5 + seededRand(seed, 11) * 10;
+    elements.push(
+      <ellipse
+        key="circle"
+        cx={cx}
+        cy={cy}
+        rx={rx}
+        ry={ry}
+        fill="none"
+        stroke={accent}
+        strokeWidth={3}
+        strokeLinecap="round"
+        opacity={0.5}
+        transform={`rotate(${rot} ${cx} ${cy})`}
+        strokeDasharray={`${rx * 4} ${rx * 0.8}`}
+      />
+    );
+  }
+
+  if (cutType === "comparison") {
+    // Hand-drawn arrow between left and right (center, ~50% height)
+    const y = height * 0.5 + (seededRand(seed, 12) - 0.5) * 20;
+    const x1 = width * 0.42;
+    const x2 = width * 0.58;
+    const midY = y - 15 + seededRand(seed, 13) * 30;
+    elements.push(
+      <path
+        key="arrow-line"
+        d={`M ${x1} ${y} Q ${(x1 + x2) / 2} ${midY} ${x2} ${y}`}
+        fill="none"
+        stroke={ink}
+        strokeWidth={3.5}
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+    );
+    // Arrowhead
+    const headSize = 12;
+    const angle = Math.atan2(y - midY, x2 - (x1 + x2) / 2);
+    const ax = x2 - headSize * Math.cos(angle - 0.4);
+    const ay = y - headSize * Math.sin(angle - 0.4);
+    elements.push(
+      <path
+        key="arrow-head"
+        d={`M ${ax} ${ay} L ${x2} ${y} L ${x2 - headSize * Math.cos(angle + 0.4)} ${y - headSize * Math.sin(angle + 0.4)}`}
+        fill="none"
+        stroke={ink}
+        strokeWidth={3.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.7}
+      />
+    );
+  }
+
+  if (cutType === "callout") {
+    // Doodle border: dashed rect around the callout area
+    const pad = 30;
+    elements.push(
+      <rect
+        key="border"
+        x={pad}
+        y={pad}
+        width={width - pad * 2}
+        height={height - pad * 2}
+        rx={12}
+        fill="none"
+        stroke={accent}
+        strokeWidth={2.5}
+        strokeDasharray="12 8"
+        strokeLinecap="round"
+        opacity={0.35}
+      />
+    );
+  }
+
+  // Scattered small marks (all decoratable types)
+  for (let i = 0; i < 3; i++) {
+    const mx = width * (0.1 + seededRand(seed, 20 + i) * 0.8);
+    const my = height * (0.1 + seededRand(seed, 30 + i) * 0.8);
+    const len = 15 + seededRand(seed, 40 + i) * 25;
+    const angle2 = seededRand(seed, 50 + i) * Math.PI;
+    elements.push(
+      <line
+        key={`mark-${i}`}
+        x1={mx}
+        y1={my}
+        x2={mx + len * Math.cos(angle2)}
+        y2={my + len * Math.sin(angle2)}
+        stroke={ink}
+        strokeWidth={2}
+        strokeLinecap="round"
+        opacity={0.12 + seededRand(seed, 60 + i) * 0.08}
+      />
+    );
+  }
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 5 }}
+    >
+      {elements}
+    </svg>
   );
 };
 
@@ -481,8 +733,9 @@ const VideoScene: React.FC<{
 const BackgroundImageLayer: React.FC<{
   src: string;
   overlayOpacity?: number;
+  overlayLight?: boolean;
   children: React.ReactNode;
-}> = ({ src, overlayOpacity = 0.55, children }) => {
+}> = ({ src, overlayOpacity = 0.55, overlayLight = false, children }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
@@ -506,10 +759,12 @@ const BackgroundImageLayer: React.FC<{
           willChange: "transform",
         }}
       />
-      {/* Dark overlay for readability */}
+      {/* Overlay for readability — light or dark depending on overlayLight */}
       <AbsoluteFill
         style={{
-          background: `rgba(15, 23, 42, ${overlayOpacity})`,
+          background: overlayLight
+            ? `rgba(250, 249, 241, ${overlayOpacity})`
+            : `rgba(15, 23, 42, ${overlayOpacity})`,
         }}
       />
       {/* Component content on top */}
@@ -523,8 +778,9 @@ const BackgroundVideoLayer: React.FC<{
   src: string;
   startFrom?: number;
   overlayOpacity?: number;
+  overlayLight?: boolean;
   children: React.ReactNode;
-}> = ({ src, startFrom = 0, overlayOpacity = 0.55, children }) => {
+}> = ({ src, startFrom = 0, overlayOpacity = 0.55, overlayLight = false, children }) => {
   const { fps } = useVideoConfig();
 
   return (
@@ -540,10 +796,12 @@ const BackgroundVideoLayer: React.FC<{
         }}
         muted
       />
-      {/* Dark overlay for readability */}
+      {/* Overlay for readability — light or dark depending on overlayLight */}
       <AbsoluteFill
         style={{
-          background: `rgba(15, 23, 42, ${overlayOpacity})`,
+          background: overlayLight
+            ? `rgba(250, 249, 241, ${overlayOpacity})`
+            : `rgba(15, 23, 42, ${overlayOpacity})`,
         }}
       />
       {/* Component content on top */}
@@ -554,6 +812,8 @@ const BackgroundVideoLayer: React.FC<{
 
 const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme }) => {
   // Wrap component with background video or image if specified
+  // overlayLight: use warm-white overlay instead of dark navy (whiteboard mode)
+  const useLightOverlay = !!theme.boardTexture;
   const maybeWrapWithBg = (element: React.ReactElement) => {
     if (cut.backgroundVideo) {
       return (
@@ -561,6 +821,7 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
           src={cut.backgroundVideo}
           startFrom={cut.backgroundVideoStart ?? 0}
           overlayOpacity={cut.backgroundOverlay ?? 0.55}
+          overlayLight={useLightOverlay}
         >
           {element}
         </BackgroundVideoLayer>
@@ -571,12 +832,31 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         <BackgroundImageLayer
           src={cut.backgroundImage}
           overlayOpacity={cut.backgroundOverlay ?? 0.55}
+          overlayLight={useLightOverlay}
         >
           {element}
         </BackgroundImageLayer>
       );
     }
     return element;
+  };
+
+  // Optionally wrap with hand-drawn SVG doodles (whiteboard decor)
+  const maybeWrapWithDecor = (element: React.ReactElement) => {
+    if (!theme.boardDecor) return element;
+    return (
+      <AbsoluteFill>
+        {element}
+        <WhiteboardDecor
+          cutId={cut.id}
+          cutType={cut.type}
+          accentColor={theme.accentColor}
+          textColor={theme.textColor}
+          width={1080}
+          height={1920}
+        />
+      </AbsoluteFill>
+    );
   };
 
   // Resolve the scene element based on cut type, then wrap with backgroundImage if set
@@ -589,36 +869,36 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
 
   // Explicit component types — use theme-derived defaults for colors
   if (cut.type === "text_card" && cut.text) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <TextCard text={cut.text} fontSize={cut.fontSize} color={textColor} backgroundColor={bgColor} />
-    );
+    ));
   }
   if (cut.type === "stat_card" && cut.stat) {
-    return maybeWrapWithBg(
-      <StatCard stat={cut.stat} subtitle={cut.subtitle} accentColor={accent} backgroundColor={bgColor} />
-    );
+    return maybeWrapWithDecor(maybeWrapWithBg(
+      <StatCard stat={cut.stat} subtitle={cut.subtitle} color={textColor} accentColor={accent} backgroundColor={bgColor} />
+    ));
   }
   if (cut.type === "callout" && cut.text) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <CalloutBox
         text={cut.text} type={cut.callout_type} title={cut.title}
         borderColor={accent} backgroundColor={cut.backgroundColor || theme.surfaceColor}
         textColor={textColor} containerBackgroundColor={bgColor}
       />
-    );
+    ));
   }
   if (cut.type === "comparison" && cut.leftLabel && cut.rightLabel && cut.leftValue && cut.rightValue) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <ComparisonCard
         leftLabel={cut.leftLabel} rightLabel={cut.rightLabel}
         leftValue={cut.leftValue} rightValue={cut.rightValue}
         title={cut.title} backgroundColor={bgColor} textColor={textColor}
         cardBackgroundColor={cut.cardBackgroundColor || theme.surfaceColor}
       />
-    );
+    ));
   }
   if (cut.type === "hero_title" && cut.text) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <HeroTitle
         title={cut.text}
         subtitle={cut.heroSubtitle || cut.subtitle}
@@ -627,10 +907,10 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         subtitleColor={theme.mutedTextColor}
         scrimBackground={heroScrim(theme)}
       />
-    );
+    ));
   }
   if (cut.type === "terminal_scene" && cut.steps) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <TerminalScene
         title={cut.terminalTitle || "Terminal"}
         steps={cut.steps as TerminalStep[]}
@@ -638,7 +918,7 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         accentColor={accent}
         backgroundColor={bgColor || theme.backgroundColor}
       />
-    );
+    ));
   }
   if (cut.type === "screenshot_scene" && cut.backgroundImage && cut.screenshotSteps) {
     return (
@@ -654,17 +934,17 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
 
   // --- Chart types — use theme.chartColors as default palette ---
   if (cut.type === "bar_chart" && cut.chartData) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <BarChart
         data={cut.chartData} title={cut.title} colors={cut.chartColors || theme.chartColors}
         animationStyle={(cut.chartAnimation as any) || "grow-up"}
         showGrid={cut.showGrid} showValues={cut.showValues} backgroundColor={bgColor}
         textColor={textColor}
       />
-    );
+    ));
   }
   if (cut.type === "line_chart" && cut.chartSeries) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <LineChart
         series={cut.chartSeries} title={cut.title} colors={cut.chartColors || theme.chartColors}
         animationStyle={(cut.chartAnimation as any) || "draw"}
@@ -672,10 +952,10 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         xLabel={cut.xLabel} yLabel={cut.yLabel} backgroundColor={bgColor}
         textColor={textColor}
       />
-    );
+    ));
   }
   if (cut.type === "pie_chart" && cut.chartData) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <PieChart
         data={cut.chartData} title={cut.title} colors={cut.chartColors || theme.chartColors}
         animationStyle={(cut.chartAnimation as any) || "expand"}
@@ -683,20 +963,20 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         showLegend={cut.showLegend} backgroundColor={bgColor}
         textColor={textColor}
       />
-    );
+    ));
   }
   if (cut.type === "kpi_grid" && cut.chartData) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <KPIGrid
         metrics={cut.chartData} title={cut.title} columns={cut.columns}
         colors={cut.chartColors || theme.chartColors} animationStyle={(cut.chartAnimation as any) || "count-up"}
         backgroundColor={bgColor}
         textColor={textColor}
       />
-    );
+    ));
   }
   if (cut.type === "progress_bar" && cut.progress !== undefined) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <AbsoluteFill
         style={{
           background: bgColor || theme.surfaceColor,
@@ -719,7 +999,7 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
           segments={cut.progressSegments} backgroundColor={cut.backgroundColor || theme.surfaceColor}
         />
       </AbsoluteFill>
-    );
+    ));
   }
 
   // --- Anime scene (multi-image crossfade + particles) ---
@@ -745,11 +1025,11 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
   const animation = cut.animation || cut.transform?.animation;
 
   if (cut.source && isImage(cut.source)) {
-    return maybeWrapWithBg(<ImageScene src={cut.source} animation={animation} />);
+    return maybeWrapWithDecor(maybeWrapWithBg(<ImageScene src={cut.source} animation={animation} />));
   }
 
   if (cut.source && isVideo(cut.source)) {
-    return maybeWrapWithBg(
+    return maybeWrapWithDecor(maybeWrapWithBg(
       <VideoScene
         src={cut.source}
         startFrom={cut.source_in_seconds ?? 0}
@@ -759,12 +1039,12 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
         sceneDurationSeconds={cut.out_seconds - cut.in_seconds}
         backgroundColor={cut.backgroundColor}
       />,
-    );
+    ));
   }
 
   // Final fallback — try as image if source exists, otherwise show text_card
   if (cut.source) {
-    return maybeWrapWithBg(<ImageScene src={cut.source} animation={animation} />);
+    return maybeWrapWithDecor(maybeWrapWithBg(<ImageScene src={cut.source} animation={animation} />));
   }
 
   // No source, no type — render as text card with cut id as fallback
@@ -775,10 +1055,11 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
 // Overlay renderer
 // ---------------------------------------------------------------------------
 
-const OverlayRenderer: React.FC<{ overlay: Overlay; theme: ThemeConfig }> = ({
-  overlay,
-  theme,
-}) => {
+const OverlayRenderer: React.FC<{
+  overlay: Overlay;
+  theme: ThemeConfig;
+  hasCaptions: boolean;
+}> = ({ overlay, theme, hasCaptions }) => {
   if (overlay.type === "section_title") {
     return (
       <SectionTitle
@@ -798,6 +1079,7 @@ const OverlayRenderer: React.FC<{ overlay: Overlay; theme: ThemeConfig }> = ({
         accentColor={overlay.accentColor || theme.accentColor}
         textColor={theme.textColor}
         position={(overlay.position as any) || "bottom-right"}
+        bottomOffset={hasCaptions ? 300 : 80}
       />
     );
   }
@@ -838,10 +1120,20 @@ export const Explainer: React.FC<ExplainerProps> = (props) => {
   // Resolve theme from props — playbook name, theme name, or custom themeConfig
   const theme = resolveTheme(props as Record<string, unknown>);
 
+  // Whiteboard opt-ins (default off — existing renders are unaffected):
+  // fontOverride: register handwriting fonts and force them over every hardcoded
+  //   font-family via a global !important rule (components set inline fonts on
+  //   purpose; inheritance alone would lose to them).
+  // boardTexture: dry-erase board background instead of the gradient mesh.
+  if (theme.fontOverride) loadHandwriting();
+
   return (
     <AbsoluteFill style={{ background: theme.backgroundColor, fontFamily: theme.headingFont || fontFamily }}>
-      {/* Layer 0: Animated gradient background — driven by theme */}
-      <AnimatedBackground theme={theme} />
+      {theme.fontOverride && (
+        <style>{`* { font-family: "Long Cang", "Architects Daughter", cursive !important; }`}</style>
+      )}
+      {/* Layer 0: Animated gradient background — driven by theme (or whiteboard) */}
+      {theme.boardTexture ? <WhiteboardBackground theme={theme} /> : <AnimatedBackground theme={theme} />}
 
       {/* Layer 1: Visual scenes */}
       {cuts.map((cut) => {
@@ -864,7 +1156,7 @@ export const Explainer: React.FC<ExplainerProps> = (props) => {
 
         return (
           <Sequence key={`overlay-${i}`} from={from} durationInFrames={duration}>
-            <OverlayRenderer overlay={overlay} theme={theme} />
+            <OverlayRenderer overlay={overlay} theme={theme} hasCaptions={!!captions?.length} />
           </Sequence>
         );
       })}
@@ -873,10 +1165,12 @@ export const Explainer: React.FC<ExplainerProps> = (props) => {
       {captions && captions.length > 0 && (
         <CaptionOverlay
           words={captions}
-          wordsPerPage={6}
+          wordsPerPage={1}
+          wordSeparator=""
           fontSize={42}
+          fontFamily={'"Microsoft YaHei", "PingFang SC", "Microsoft YaHei", sans-serif'}
           color={theme.textColor}
-          highlightColor={theme.captionHighlightColor}
+          highlightColor={theme.textColor}
           backgroundColor={theme.captionBackgroundColor}
         />
       )}

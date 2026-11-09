@@ -16,6 +16,7 @@ import { ProductReveal, ProductRevealProps } from "./components/ProductReveal";
 import { CaptionOverlay, WordCaption } from "./components/CaptionOverlay";
 import { CollageBurst, CollageBurstProps } from "./CollageBurst";
 import { LyricOverlay, LyricOverlayProps } from "./LyricOverlay";
+import { ShotcraftV6 } from "./ShotcraftV6";
 
 // ---------------------------------------------------------------------------
 // Theme System — prevents every video from looking like dark fintech
@@ -36,6 +37,10 @@ export interface ThemeConfig {
   transitionDuration: number;
   captionHighlightColor: string;
   captionBackgroundColor: string;
+  // Whiteboard-explainer opt-ins (undefined/false = existing behaviour)
+  fontOverride?: boolean;    // force bundled handwriting fonts across all components
+  boardTexture?: boolean;    // AnimatedBackground renders a dry-erase board instead of gradient mesh
+  boardDecor?: boolean;      // WhiteboardDecor: hand-drawn SVG doodles (underlines, circles, arrows) on text scenes
 }
 
 export const THEMES: Record<string, ThemeConfig> = {
@@ -329,6 +334,17 @@ export const Root: React.FC = () => {
           fadeOutSeconds: 1.5,
           overlay: true,
         } as EndTagProps}
+      />
+      <Composition
+        id="ShotcraftV6"
+        component={ShotcraftV6}
+        durationInFrames={4770}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          music: true,
+        }}
       />
     </>
   );

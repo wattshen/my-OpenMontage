@@ -45,27 +45,34 @@ export const KPIGrid: React.FC<KPIGridProps> = ({
   animationStyle = "count-up",
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, width, height } = useVideoConfig();
+  const vertical = height > width;
+  const canvasW = vertical ? 1080 : 1920;
+  const canvasH = vertical ? 1920 : 1080;
 
-  const cols = Math.min(columns, metrics.length);
+  const cols = vertical
+    ? Math.min(2, metrics.length)
+    : Math.min(columns, metrics.length);
   const rows = Math.ceil(metrics.length / cols);
 
-  // Grid layout constants (within 1920x1080)
-  const gridPadding = 100;
+  // Grid layout constants
+  const gridPadding = vertical ? 60 : 100;
   const cardGap = 28;
-  const titleHeight = title ? 120 : 0;
-  const gridTop = 80 + titleHeight;
-  const gridWidth = 1920 - gridPadding * 2;
-  const gridHeight = 1080 - gridTop - 80;
+  const titleHeight = vertical ? 220 : title ? 120 : 0;
+  const gridTop = vertical ? 260 : 80 + titleHeight;
+  const gridWidth = canvasW - gridPadding * 2;
+  const gridHeight = canvasH - gridTop - 80;
   const cardWidth = (gridWidth - cardGap * (cols - 1)) / cols;
   const cardHeight = Math.min(
     (gridHeight - cardGap * (rows - 1)) / rows,
-    320
+    vertical ? 560 : 320
   );
 
   // Center grid vertically
   const totalGridHeight = rows * cardHeight + (rows - 1) * cardGap;
-  const gridTopOffset = gridTop + (gridHeight - totalGridHeight) / 2;
+  const gridTopOffset = vertical
+    ? gridTop
+    : gridTop + (gridHeight - totalGridHeight) / 2;
 
   // Fade out near end
   const fadeOut = interpolate(
@@ -89,11 +96,11 @@ export const KPIGrid: React.FC<KPIGridProps> = ({
         <div
           style={{
             position: "absolute",
-            top: 60,
+            top: vertical ? 120 : 60,
             left: 0,
             right: 0,
             textAlign: "center",
-            fontSize: 48,
+            fontSize: vertical ? 52 : 48,
             fontWeight: 700,
             color: textColor,
             fontFamily,

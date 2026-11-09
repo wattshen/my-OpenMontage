@@ -36,6 +36,8 @@ type CaptionOverlayProps = {
   // without an explicit direction RTL words are laid out left-to-right and
   // the sentence reads backwards.
   direction?: "ltr" | "rtl" | "auto";
+  // Hard cap per caption line. Longer tokens are split with proportional timing.
+  maxCharsPerLine?: number;
 };
 
 const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
@@ -79,6 +81,23 @@ function buildPages(words: WordCaption[], wordsPerPage: number): CaptionPage[] {
   return pages;
 }
 
+function splitLongWords(words: WordCaption[], maxChars: number): WordCaption[] {
+  if (maxChars <= 0) return words;
+  return words.flatMap((w) => {
+    const chars = [...w.word];
+    if (chars.length <= maxChars) return [w];
+    const count = Math.ceil(chars.length / maxChars);
+    const size = Math.ceil(chars.length / count);
+    const span = (w.endMs - w.startMs) / count;
+    return Array.from({ length: count }, (_, i) => ({
+      ...w,
+      word: chars.slice(i * size, (i + 1) * size).join(""),
+      startMs: Math.round(w.startMs + span * i),
+      endMs: Math.round(w.startMs + span * (i + 1)),
+    })).filter((part) => part.word.length > 0);
+  });
+}
+
 const PageRenderer: React.FC<{
   page: CaptionPage;
   fontSize: number;
@@ -109,7 +128,11 @@ const PageRenderer: React.FC<{
         paddingBottom: 80,
       }}
     >
+      {/* Whiteboard themes force a handwriting font with a global !important
+          rule. Captions must stay in the plain UI font, so outrank it here. */}
+      <style>{`.om-caption, .om-caption * { font-family: ${fontFamily} !important; }`}</style>
       <div
+        className="om-caption"
         dir={direction}
         style={{
           direction,
@@ -128,7 +151,7 @@ const PageRenderer: React.FC<{
             fontWeight: 700,
             fontFamily,
             lineHeight: 1.4,
-            whiteSpace: "pre-wrap",
+            whiteSpace: "nowrap",
           }}
         >
           {page.words.map((w, i) => {
@@ -145,9 +168,7 @@ const PageRenderer: React.FC<{
                     whiteSpace: "nowrap",
                     color: isActive ? highlightColor : isPast ? color : `${color}99`,
                     transition: "none", // CSS transitions forbidden in Remotion
-                    textShadow: isActive
-                      ? `0 0 20px ${highlightColor}66, 0 2px 4px rgba(0,0,0,0.5)`
-                      : "0 2px 4px rgba(0,0,0,0.5)",
+                    textShadow: "0 2px 4px rgba(0,0,0,0.5)",
                   }}
                 >
                   {w.word}
@@ -172,9 +193,10 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   fontFamily = "Space Grotesk, Inter, system-ui, sans-serif",
   wordSeparator = " ",
   direction = "auto",
+  maxCharsPerLine = 15,
 }) => {
   const { fps } = useVideoConfig();
-  const pages = buildPages(words, wordsPerPage);
+  const pages = buildPages(splitLongWords(words, maxCharsPerLine), wordsPerPage);
   const resolvedDirection =
     direction === "auto" ? detectDirection(words) : direction;
 

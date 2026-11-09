@@ -13,6 +13,8 @@ interface StatRevealProps {
   /** Label color. Defaults to near-white; pass the theme's textColor on light themes. */
   textColor?: string;
   position?: "center" | "bottom-right" | "right";
+  /** Distance from the bottom edge for bottom-right placement. */
+  bottomOffset?: number;
 }
 
 export const StatReveal: React.FC<StatRevealProps> = ({
@@ -21,6 +23,7 @@ export const StatReveal: React.FC<StatRevealProps> = ({
   accentColor = "#A78BFA",
   textColor = "#F8FAFC",
   position = "bottom-right",
+  bottomOffset = 80,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -54,7 +57,12 @@ export const StatReveal: React.FC<StatRevealProps> = ({
       ? { justifyContent: "center", alignItems: "center" }
       : position === "right"
       ? { justifyContent: "center", alignItems: "flex-end", paddingRight: 80 }
-      : { justifyContent: "flex-end", alignItems: "flex-end", padding: 80 };
+      : {
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
+          paddingRight: 80,
+          paddingBottom: bottomOffset,
+        };
 
   return (
     <AbsoluteFill style={positionStyles}>

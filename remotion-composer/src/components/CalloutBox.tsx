@@ -46,7 +46,8 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
   containerBackgroundColor = "#FFFFFF",
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
+  const vertical = height > width;
 
   const defaults = TYPE_DEFAULTS[type];
   const resolvedBorder = borderColor || defaults.border;
@@ -120,7 +121,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
         style={{
           opacity,
           transform: `translateX(${slideX}px) scale(${scale})`,
-          width: "72%",
+          width: vertical ? "84%" : "72%",
           maxWidth: 1380,
           position: "relative",
         }}
@@ -133,7 +134,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
             alignItems: "flex-start",
             backgroundColor: resolvedBg,
             borderRadius: 12,
-            padding: "40px 48px",
+            padding: vertical ? "80px 64px" : "40px 48px",
             overflow: "hidden",
             position: "relative",
             boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
@@ -155,14 +156,14 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
           {/* Icon */}
           <div
             style={{
-              fontSize: isQuote ? 72 : 48,
+              fontSize: vertical ? (isQuote ? 96 : 64) : isQuote ? 72 : 48,
               lineHeight: 1,
-              marginRight: 28,
+              marginRight: vertical ? 36 : 28,
               flexShrink: 0,
               opacity: iconOpacity,
               transform: `scale(${iconScale})`,
               color: isQuote ? resolvedBorder : undefined,
-              fontFamily: isQuote ? "Georgia, serif" : undefined,
+              fontFamily: isQuote && !vertical ? "Georgia, serif" : undefined,
               fontWeight: isQuote ? 700 : undefined,
               marginTop: isQuote ? -12 : 0,
             }}
@@ -175,7 +176,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: vertical ? 22 : 12,
               flex: 1,
               opacity: textOpacity,
             }}
@@ -185,7 +186,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
                 style={{
                   fontFamily,
                   fontWeight: 700,
-                  fontSize: titleFontSize,
+                  fontSize: vertical ? Math.max(titleFontSize, 52) : titleFontSize,
                   color: resolvedBorder,
                   lineHeight: 1.3,
                 }}
@@ -195,10 +196,10 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
             )}
             <div
               style={{
-                fontFamily: isQuote ? "Georgia, serif" : fontFamily,
+                fontFamily: isQuote && !vertical ? "Georgia, serif" : fontFamily,
                 fontWeight: isQuote ? 400 : 400,
-                fontStyle: isQuote ? "italic" : "normal",
-                fontSize,
+                fontStyle: isQuote && !vertical ? "italic" : "normal",
+                fontSize: vertical ? Math.max(fontSize, 44) : fontSize,
                 color: textColor,
                 lineHeight: 1.6,
               }}

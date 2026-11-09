@@ -48,7 +48,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   percentageFontSize = 28,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, width: videoWidth, height: videoHeight } =
+    useVideoConfig();
+  const vertical = videoHeight > videoWidth;
 
   const clampedProgress = Math.max(0, Math.min(100, progress));
 
@@ -120,6 +122,91 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   // Segmented variant
   const isSegmented = segments && segments.length > 0;
+
+  if (vertical && isSegmented) {
+    return (
+      <AbsoluteFill
+        style={{
+          background: backgroundColor,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            width: "84%",
+            opacity: containerOpacity,
+            transform: `scale(${containerScale})`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 34,
+          }}
+        >
+          {label && (
+            <div
+              style={{
+                fontFamily,
+                fontWeight: 700,
+                fontSize: 56,
+                color: textColor,
+                textAlign: "center",
+                marginBottom: 18,
+              }}
+            >
+              {label}
+            </div>
+          )}
+          {segments!.map((seg, i) => {
+            const segProgress = spring({
+              frame: frame - (10 + i * 8),
+              fps,
+              config: { damping: 14, stiffness: 80 },
+            });
+            const segColor = seg.color || color;
+            return (
+              <div
+                key={i}
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontFamily,
+                    fontSize: 34,
+                    fontWeight: 600,
+                    color: textColor,
+                  }}
+                >
+                  <span>{seg.label}</span>
+                  <span style={{ opacity: 0.55 }}>{seg.value}%</span>
+                </div>
+                <div
+                  style={{
+                    height: 54,
+                    backgroundColor: trackColor,
+                    borderRadius: 27,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: segColor,
+                      borderRadius: 27,
+                      transform: `scaleX(${segProgress})`,
+                      transformOrigin: "left",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    );
+  }
 
   // Bar track dimensions (centered, 70% canvas width)
   const trackWidth = 1344; // 70% of 1920
