@@ -21,9 +21,9 @@ output:
   default_format: mp4
   default_codec: libx264
   default_audio_codec: aac
-  default_resolution: "1920x1080"
-  default_fps: 30
-  default_crf: 23
+  default_resolution: "640x360"
+  default_fps: 25
+  default_crf: 28
 
 paths:
   pipeline_dir: pipeline
