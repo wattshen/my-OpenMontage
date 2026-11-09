@@ -151,11 +151,18 @@ stages:
     review_focus:
       - Full script duration covered with no gaps
       - "Visual variety: no 3+ consecutive scenes of same type"
+      - "Information density: at least 3 distinct info points per 30 seconds"
+      - "Data visualization: at least 2 chart/diagram/comparison scenes per video"
+      - "Overlay usage: section_title or stat_reveal overlays on at least 30% of scenes"
+      - "No consecutive text_card scenes without a chart, diagram, or comparison in between"
+      - "Every scene has at least 2 visual elements (primary + overlay/caption/decor)"
       - Asset feasibility - every required_asset uses a tool from the production plan
       - Playbook adherence - transitions, colors, pacing rules
     success_criteria:
       - Schema-valid scene_plan with required_assets per scene
       - At least 3 different scene types used
+      - At least 2 data visualization scenes (bar_chart, line_chart, pie_chart, kpi_grid, comparison, diagram)
+      - Overlay coverage: overlays array is non-empty and covers at least 30% of total duration
 
   - name: assets
     skill: pipelines/explainer/asset-director
@@ -211,10 +218,14 @@ stages:
       - All cuts reference valid assets from manifest
       - Subtitles enabled with playbook-compatible styling
       - Music configured with ducking parameters
+      - "Layered information: at least 2 layers active at any time (primary + overlay/caption)"
+      - "No dead air: every 3+ seconds has a new visual element, transition, or overlay change"
+      - "Overlay diversity: at least 2 different overlay types used across the video"
       - No timeline gaps or overlaps
     success_criteria:
       - Schema-valid edit_decisions
       - Full video duration covered
+      - Overlays present and cover at least 30% of timeline
 
   - name: compose
     skill: pipelines/explainer/compose-director

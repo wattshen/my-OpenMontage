@@ -11,7 +11,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "source", "in_seconds", "out_seconds"],
+        "required": ["id", "in_seconds", "out_seconds"],
         "properties": {
           "id": { "type": "string" },
           "source": { "type": "string", "description": "Source file path or asset-manifest ID" },
@@ -61,34 +61,90 @@
             "type": "string",
             "description": "Backing color used behind this cut by composition runtimes"
           },
-          "reason": { "type": "string" }
+          "reason": { "type": "string" },
+          "type": {
+            "type": "string",
+            "description": "Scene component type (e.g. text_card, stat_card, bar_chart, line_chart, pie_chart, kpi_grid, comparison, callout, progress_bar, hero_title, diagram, anime_scene, terminal_scene, screenshot_scene, screen_recording, talking_head, broll, generated, transition)"
+          },
+          "text": { "type": "string", "description": "Primary text content for text_card, callout, hero_title" },
+          "title": { "type": "string", "description": "Title for charts, callouts, comparisons" },
+          "subtitle": { "type": "string", "description": "Subtitle for stat_card, hero_title" },
+          "stat": { "type": "string", "description": "Big number for stat_card" },
+          "callout_type": { "type": "string", "enum": ["info", "warning", "tip", "quote"] },
+          "leftLabel": { "type": "string" },
+          "rightLabel": { "type": "string" },
+          "leftValue": { "type": "string" },
+          "rightValue": { "type": "string" },
+          "chartData": { "description": "Chart data array (bar_chart, pie_chart, kpi_grid)" },
+          "chartSeries": { "description": "Chart series array (line_chart)" },
+          "chartColors": { "type": "array", "items": { "type": "string" } },
+          "chartAnimation": { "type": "string" },
+          "donut": { "type": "boolean" },
+          "centerLabel": { "type": "string" },
+          "centerValue": { "type": "string" },
+          "showGrid": { "type": "boolean" },
+          "showValues": { "type": "boolean" },
+          "showLegend": { "type": "boolean" },
+          "showMarkers": { "type": "boolean" },
+          "xLabel": { "type": "string" },
+          "yLabel": { "type": "string" },
+          "columns": { "type": "integer", "enum": [2, 3, 4] },
+          "progress": { "type": "number", "minimum": 0, "maximum": 1 },
+          "progressLabel": { "type": "string" },
+          "progressColor": { "type": "string" },
+          "progressAnimation": { "type": "string" },
+          "progressSegments": { "type": "array" },
+          "heroSubtitle": { "type": "string" },
+          "cardBackgroundColor": { "type": "string" },
+          "backgroundImage": { "type": "string", "description": "AI-generated or stock image behind the component" },
+          "backgroundVideo": { "type": "string", "description": "Video clip behind the component" },
+          "backgroundVideoStart": { "type": "number", "minimum": 0 },
+          "backgroundOverlay": { "type": "number", "minimum": 0, "maximum": 1 },
+          "color": { "type": "string" },
+          "accentColor": { "type": "string" },
+          "fontSize": { "type": "number" },
+          "animation": { "type": "string" },
+          "source_in_seconds": { "type": "number", "minimum": 0 },
+          "images": { "type": "array", "items": { "type": "string" }, "description": "Image paths for anime_scene crossfade" },
+          "particles": { "type": "string" },
+          "particleColor": { "type": "string" },
+          "particleCount": { "type": "integer" },
+          "particleIntensity": { "type": "number" },
+          "vignette": { "type": "boolean" },
+          "lightingFrom": { "type": "string" },
+          "lightingTo": { "type": "string" },
+          "steps": { "type": "array", "description": "Terminal/screencast step list" },
+          "terminalTitle": { "type": "string" },
+          "prompt": { "type": "string" },
+          "screenshotSteps": { "type": "array" },
+          "screenshotSize": { "type": "object" },
+          "cursorStartAt": { "type": "array", "items": { "type": "number" } }
         },
-        "additionalProperties": false
+        "additionalProperties": true
       }
     },
     "overlays": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["asset_id", "start_seconds", "end_seconds", "position"],
+        "required": ["type", "in_seconds", "out_seconds"],
         "properties": {
-          "asset_id": { "type": "string" },
-          "start_seconds": { "type": "number", "minimum": 0 },
-          "end_seconds": { "type": "number", "minimum": 0 },
-          "position": {
-            "type": "object",
-            "properties": {
-              "x": { "type": "number" },
-              "y": { "type": "number" },
-              "width": { "type": "number" },
-              "height": { "type": "number" }
-            },
-            "required": ["x", "y"]
+          "type": {
+            "type": "string",
+            "enum": ["section_title", "stat_reveal", "hero_title", "provider_chip"],
+            "description": "Overlay component type"
           },
-          "animation": { "type": "string" },
-          "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          "in_seconds": { "type": "number", "minimum": 0 },
+          "out_seconds": { "type": "number", "minimum": 0 },
+          "text": { "type": "string" },
+          "subtitle": { "type": "string" },
+          "accentColor": { "type": "string" },
+          "position": { "type": "string", "description": "Placement hint (e.g. top-left, bottom-right, center)" },
+          "providers": { "type": "array", "items": { "type": "string" } },
+          "cycleSeconds": { "type": "number" },
+          "label": { "type": "string" }
         },
-        "additionalProperties": false
+        "additionalProperties": true
       }
     },
     "audio": {
@@ -241,6 +297,21 @@
       "additionalProperties": false
     },
     "metadata": { "type": "object" }
+    ,
+    "captions": {
+      "type": "array",
+      "description": "Word-level caption timing from WhisperX transcription",
+      "items": {
+        "type": "object",
+        "required": ["word", "startMs", "endMs"],
+        "properties": {
+          "word": { "type": "string" },
+          "startMs": { "type": "number", "minimum": 0 },
+          "endMs": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
   },
   "additionalProperties": false
 }

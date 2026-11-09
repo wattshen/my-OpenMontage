@@ -255,6 +255,45 @@ separate explainer submit function.
 
 ---
 
+## Information Density Rules (Binding)
+
+These rules prevent the most common failure mode: videos that feel empty, slow, and information-light.
+
+### Density Targets
+
+| Metric | Minimum | Target |
+|--------|---------|--------|
+| Distinct info points per 30 seconds | 3 | 4-5 |
+| Data visualization scenes (chart, diagram, comparison) | 2 per video | 3+ per video |
+| Scenes with overlays (section_title, stat_reveal, hero_title) | 30% of total | 50% |
+| Max consecutive text_card scenes | 1 | — |
+| Max static duration without new visual element | 3 seconds | 2 seconds |
+| Visual elements per scene (primary + overlay + decor) | 2 | 3+ |
+
+### Anti-Conservative Rules
+
+1. **No text_card runs**: Never plan two consecutive `text_card` scenes. After a text_card, the next scene MUST be a chart, diagram, comparison, or animation. If the script section doesn't naturally call for data, use a `callout` with a key insight or a `comparison` showing before/after.
+
+2. **Overlay mandate**: At least 30% of the total video duration must have an active overlay. Use `section_title` to mark topic shifts, `stat_reveal` to emphasize key numbers, `hero_title` for the opening. Overlays are free — they don't require external assets.
+
+3. **Chart-first for data**: When the script mentions numbers, percentages, comparisons, or trends, ALWAYS prefer a chart scene (bar_chart, line_chart, pie_chart, kpi_grid) over a text_card. Text cards are for narrative transitions, not data presentation.
+
+4. **Layer requirement**: Every scene must have at least 2 visual elements. For Remotion-native scenes, this means the component itself plus an overlay or background decoration. For generated/image scenes, this means the image plus a caption or overlay. Never plan a scene with just one element.
+
+5. **Progressive reveal for concepts**: If a concept has 3+ components or steps, use progressive reveal (diagram reveal, step-by-step animation) instead of showing everything at once. This keeps the viewer engaged and prevents "wall of information."
+
+### Density Checklist (Before Submitting)
+
+- [ ] Info points per 30s: counted and meets minimum 3
+- [ ] Data visualization scenes: at least 2 planned, using different chart types
+- [ ] Overlay coverage: overlays array covers at least 30% of total duration
+- [ ] No consecutive text_card scenes
+- [ ] Every scene has 2+ visual elements
+- [ ] No 3+ second gap without a new visual element or transition
+- [ ] Chart types are varied (not all bar_charts)
+
+---
+
 ## Gate Reminder (Binding)
 
 This stage gates on human approval (`human_approval_default: true`). After review passes:

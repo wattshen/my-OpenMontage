@@ -108,6 +108,24 @@ quality_rules:
   - "Color consistency: same palette across all generated images (use seed management)"
   - "No text burned into generated images — use Remotion overlays instead"
 
+density:
+  min_elements_per_scene: 2
+  max_static_seconds: 3
+  required_visual_variety: true
+  min_charts_per_video: 1
+  overlay_coverage_pct: 30
+  max_consecutive_text_cards: 1
+  preferred_scene_types:
+    - anime_scene
+    - text_card
+    - stat_card
+    - callout
+    - comparison
+  overlay_types:
+    - section_title
+    - stat_reveal
+    - hero_title
+
 chart_palette:
   - "#A8E6CF"
   - "#FFB347"

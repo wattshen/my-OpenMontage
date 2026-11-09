@@ -31,9 +31,25 @@ Build a timeline map:
 ...
 ```
 
+### Step 1b: Information Layer Audit (Mandatory)
+
+Before defining cuts, verify the scene plan provides enough information density:
+
+| Check | Requirement |
+|-------|-------------|
+| Info points per 30s | At least 3 distinct facts/data points |
+| Chart/diagram scenes | At least 2 in the scene plan |
+| Overlay coverage | At least 30% of scenes have overlays |
+| Consecutive text_card | Never more than 1 in a row |
+| Max static gap | No 3+ seconds without a new visual element |
+
+If the scene plan fails any of these, **stop and send it back** with specific feedback on which scenes need more visual variety. Do not proceed with a low-density scene plan.
+
 ### Step 2: Define Cuts
 
 Each cut defines what visual is shown and when:
+
+**CRITICAL: Preserve ALL rendering fields from scene_plan.** The `cuts` array in `edit_decisions` is what Remotion's `SceneRenderer` actually receives. If you drop `type`, `text`, `stat`, `chartData`, `comparison`, or any other rendering field, the scene will render as an empty fallback. Map every field from the scene plan into the cut:
 
 ```json
 {
@@ -42,6 +58,10 @@ Each cut defines what visual is shown and when:
   "in_seconds": 0,
   "out_seconds": 10,
   "layer": "primary",
+  "type": "stat_card",
+  "stat": "185%",
+  "subtitle": "AI adoption growth",
+  "title": "Growth",
   "transform": {
     "scale": 1.0,
     "position": "center",
@@ -53,10 +73,33 @@ Each cut defines what visual is shown and when:
 }
 ```
 
+**Field mapping from scene_plan to cut:**
+
+| scene_plan field | cut field | Notes |
+|-----------------|-----------|-------|
+| `type` | `type` | REQUIRED — determines which Remotion component renders |
+| `description` | (not copied) | Used for context, not rendering |
+| `text` | `text` | For text_card, callout, hero_title |
+| `stat` | `stat` | For stat_card |
+| `subtitle` | `subtitle` | For stat_card, hero_title |
+| `title` | `title` | For charts, comparisons |
+| `chartData` | `chartData` | For bar_chart, pie_chart, kpi_grid |
+| `chartSeries` | `chartSeries` | For line_chart |
+| `leftLabel/leftValue/rightLabel/rightValue` | same | For comparison |
+| `callout_type` | `callout_type` | For callout |
+| `images` | `images` | For anime_scene |
+| `steps` | `steps` | For terminal_scene |
+| `backgroundImage` | `backgroundImage` | AI-generated background |
+| `accentColor` | `accentColor` | Override theme accent |
+
+**If the scene_plan has a `type` but no rendering fields** (e.g., a `diagram` scene with only a description), you MUST populate the cut with the correct fields for that type. For `diagram` scenes, this means adding `chartData` or `steps` depending on the diagram type. For `animation` scenes, determine whether it maps to `stat_card`, `bar_chart`, `kpi_grid`, or another concrete type based on the scene description.
+
 **Layering rules:**
 - `primary` — main visual (one at a time)
 - `overlay` — text cards, stat cards, key terms (on top of primary)
 - `background` — solid color or texture behind everything
+
+**Layering requirement**: At least 2 layers must be active at any point in the timeline. If a cut has no overlay, add one (section_title, stat_reveal, or hero_title). Never have a single-layer timeline.
 
 ### Step 3: Configure Subtitles
 

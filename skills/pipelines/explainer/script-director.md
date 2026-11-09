@@ -129,6 +129,21 @@ Write each section with these fields:
 
 Count your words. If you're 20%+ over budget, the TTS will either rush or exceed duration. Cut ruthlessly.
 
+**Chinese narration budget (字数，不是英文单词):** Chinese TTS runs ~4-5 characters/second.
+- 30s → 120-150 字
+- 60s → 240-300 字
+- 90s → 360-450 字
+- 120s → 480-600 字
+
+**Both directions are violations — under-writing is the more common failure:**
+- **Over budget by 20%+** → TTS rushes or overruns the video.
+- **Under budget by 20%+** → the video feels empty; large stretches of screen time have no spoken information. This is the "太空" failure mode. Rewrite with more concrete facts, examples, or explanation — do NOT pad with filler.
+
+**Cross-check against scene count** (mandatory):
+- Words per scene should be ≥ 2.0 × scene duration (English) or ≥ 4 × scene duration (Chinese characters).
+- If any scene is budgeted below that, either expand its script content or merge it with a neighbor.
+- A 5s scene with fewer than 10 English words / 20 Chinese characters is a red flag.
+
 #### Speaker Directions
 
 Write directions that TTS can actually implement. Prefer structured

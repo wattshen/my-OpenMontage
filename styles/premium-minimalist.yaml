@@ -105,6 +105,26 @@ quality_rules:
   - "Use motion to reveal hierarchy, not to add energy"
   - "Avoid decorative gradients and oversized floating shapes"
 
+density:
+  min_elements_per_scene: 2
+  max_static_seconds: 4
+  required_visual_variety: true
+  min_charts_per_video: 2
+  overlay_coverage_pct: 25
+  max_consecutive_text_cards: 1
+  preferred_scene_types:
+    - hero_title
+    - stat_card
+    - text_card
+    - comparison
+    - callout
+    - bar_chart
+    - progress_bar
+  overlay_types:
+    - section_title
+    - stat_reveal
+    - hero_title
+
 chart_palette:
   - "#2563EB"
   - "#0F766E"

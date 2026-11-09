@@ -91,6 +91,26 @@ quality_rules:
   - "Every concept gets its own visual — no cramming"
   - "Whitespace is content — at least 30% of frame should be empty"
 
+density:
+  min_elements_per_scene: 2
+  max_static_seconds: 4
+  required_visual_variety: true
+  min_charts_per_video: 2
+  overlay_coverage_pct: 25
+  max_consecutive_text_cards: 1
+  preferred_scene_types:
+    - diagram
+    - text_card
+    - stat_card
+    - comparison
+    - callout
+    - bar_chart
+    - progress_bar
+  overlay_types:
+    - section_title
+    - stat_reveal
+    - hero_title
+
 chart_palette:
   - "#E94560"
   - "#1A1A2E"

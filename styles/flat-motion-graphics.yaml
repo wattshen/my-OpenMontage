@@ -90,6 +90,29 @@ quality_rules:
   - "Pacing: new visual element every 2-3 seconds"
   - "Sound effect on every major transition"
 
+density:
+  min_elements_per_scene: 2
+  max_static_seconds: 2
+  required_visual_variety: true
+  min_charts_per_video: 2
+  overlay_coverage_pct: 40
+  max_consecutive_text_cards: 1
+  preferred_scene_types:
+    - hero_title
+    - stat_card
+    - bar_chart
+    - line_chart
+    - comparison
+    - kpi_grid
+    - progress_bar
+    - callout
+    - anime_scene
+  overlay_types:
+    - section_title
+    - stat_reveal
+    - hero_title
+    - provider_chip
+
 chart_palette:
   - "#7C3AED"
   - "#EC4899"

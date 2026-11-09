@@ -90,6 +90,27 @@ quality_rules:
   - "Hold establishing shots for 2.5s minimum"
   - "No rapid cuts — minimum 2s between transitions"
 
+density:
+  min_elements_per_scene: 2
+  max_static_seconds: 3
+  required_visual_variety: true
+  min_charts_per_video: 2
+  overlay_coverage_pct: 30
+  max_consecutive_text_cards: 1
+  preferred_scene_types:
+    - text_card
+    - stat_card
+    - bar_chart
+    - line_chart
+    - comparison
+    - kpi_grid
+    - callout
+    - progress_bar
+  overlay_types:
+    - section_title
+    - stat_reveal
+    - hero_title
+
 chart_palette:
   - "#2563EB"
   - "#F59E0B"
